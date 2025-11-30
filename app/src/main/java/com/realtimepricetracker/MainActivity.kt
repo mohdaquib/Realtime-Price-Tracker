@@ -11,37 +11,24 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.realtimepricetracker.network.WebsocketManager
+import com.realtimepricetracker.ui.PriceTrackerScreen
+import com.realtimepricetracker.ui.PriceTrackerViewModel
 import com.realtimepricetracker.ui.theme.RealtimePriceTrackerTheme
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        val websocketManager = WebsocketManager(CoroutineScope(SupervisorJob()))
         setContent {
             RealtimePriceTrackerTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                val viewModel: PriceTrackerViewModel = viewModel { PriceTrackerViewModel(websocketManager) }
+                PriceTrackerScreen(viewModel = viewModel)
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    RealtimePriceTrackerTheme {
-        Greeting("Android")
     }
 }

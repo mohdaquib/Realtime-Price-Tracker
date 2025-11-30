@@ -40,6 +40,15 @@ class PriceTrackerViewModel(
         }.launchIn(viewModelScope)
     }
 
+    fun toggleFeed() {
+        val current = _uiState.value
+        if (current.isRunning) {
+            stopFeed()
+        } else {
+            startFeed()
+        }
+    }
+
     private fun startFeed() {
         websocketManager.connect()
         timerJob = viewModelScope.launch {
