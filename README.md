@@ -21,4 +21,4 @@ Run `./gradlew test` for unit tests
 Implemented flash, themes, tests.
 
 ## Screenshot
-<img width="1080" height="2340" alt="price_tracker" src="https://github.com/user-attachments/assets/0ca9f6b5-fee8-4417-aab4-f1af4c7d3b67" />
+<img width="580" height="1200" alt="price_tracker" src="https://github.com/user-attachments/assets/0ca9f6b5-fee8-4417-aab4-f1af4c7d3b67" />
