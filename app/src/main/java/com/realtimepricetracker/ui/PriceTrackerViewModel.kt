@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import kotlin.random.Random
 
 class PriceTrackerViewModel(
-    private val websocketManager: WebsocketManager,
+    private val websocketManager: WebsocketManager
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
@@ -72,7 +72,7 @@ class PriceTrackerViewModel(
         _uiState.update { it.copy(isRunning = false) }
     }
 
-    private fun updateStockData(update: PriceUpdate) {
+    internal fun updateStockData(update: PriceUpdate) {
         _uiState.update { state ->
             val updatedSymbols =
                 state.symbols
