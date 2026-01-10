@@ -1,6 +1,5 @@
 package com.realtimepricetracker.network
 
-import androidx.compose.runtime.MutableState
 import com.realtimepricetracker.Constants
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -13,7 +12,6 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
-import okio.ByteString
 
 class WebsocketManager(private val scope: CoroutineScope) {
     private val client = OkHttpClient()

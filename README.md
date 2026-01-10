@@ -1,6 +1,6 @@
 # Real-Time Price Tracker
 
-Android app using Jetpack Compose and WebSockets for mock stock prices.
+An Android application built with Jetpack Compose and WebSockets to simulate real-time stock prices. On the first launch, the app displays the top 25 stocks, each initialized with a base price of 100.0 plus a randomly generated value between 0.0 and 200.0. When the Start button is pressed, the app connects to the Postman Echo WebSocket server, sends the generated prices, and receives the same values in response. If a stock price decreases, it flashes red; if it increases, it flashes green.
 
 ## How to Run
 - Open in Android Studio.
