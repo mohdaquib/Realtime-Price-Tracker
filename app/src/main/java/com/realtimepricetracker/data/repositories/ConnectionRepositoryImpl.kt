@@ -1,0 +1,40 @@
+package com.realtimepricetracker.data.repositories
+
+import com.realtimepricetracker.data.datasource.WebSocketDataSource
+import com.realtimepricetracker.domain.repositories.ConnectionRepository
+import kotlinx.coroutines.flow.Flow
+
+/**
+ * Implementation of ConnectionRepository using WebSocket data source.
+ */
+class ConnectionRepositoryImpl(
+    private val webSocketDataSource: WebSocketDataSource
+) : ConnectionRepository {
+
+    override fun observeConnectionState(): Flow<Boolean> {
+        return webSocketDataSource.connectionState
+    }
+
+    override suspend fun connect(): Result<Unit> {
+        return try {
+            webSocketDataSource.connect()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun disconnect(): Result<Unit> {
+        return try {
+            webSocketDataSource.disconnect()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override fun isConnected(): Boolean {
+        return webSocketDataSource.isConnected()
+    }
+}
+
