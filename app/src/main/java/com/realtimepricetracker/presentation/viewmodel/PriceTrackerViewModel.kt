@@ -5,10 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.realtimepricetracker.domain.config.DomainConstants
 import com.realtimepricetracker.domain.entities.Stock
+import com.realtimepricetracker.domain.usecases.AddToWatchlistUseCase
 import com.realtimepricetracker.domain.usecases.GetInitialStocksUseCase
 import com.realtimepricetracker.domain.usecases.ManageConnectionUseCase
+import com.realtimepricetracker.domain.usecases.ObserveWatchlistUseCase
+import com.realtimepricetracker.domain.usecases.RemoveFromWatchlistUseCase
 import com.realtimepricetracker.domain.usecases.SubscribeToPriceUpdatesUseCase
 import com.realtimepricetracker.domain.usecases.WatchSymbolsUseCase
+import com.realtimepricetracker.presentation.state.AppTab
 import com.realtimepricetracker.presentation.state.PriceTrackerUiState
 import com.realtimepricetracker.presentation.state.StockUiModel
 import kotlinx.coroutines.delay
@@ -20,25 +24,28 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/**
- * ViewModel for the Price Tracker screen.
- * Implements MVVM pattern with StateFlow for reactive UI state management.
- */
 class PriceTrackerViewModel(
     private val getInitialStocksUseCase: GetInitialStocksUseCase,
     private val subscribeToPriceUpdatesUseCase: SubscribeToPriceUpdatesUseCase,
     private val watchSymbolsUseCase: WatchSymbolsUseCase,
-    private val manageConnectionUseCase: ManageConnectionUseCase
+    private val manageConnectionUseCase: ManageConnectionUseCase,
+    private val observeWatchlistUseCase: ObserveWatchlistUseCase,
+    private val addToWatchlistUseCase: AddToWatchlistUseCase,
+    private val removeFromWatchlistUseCase: RemoveFromWatchlistUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PriceTrackerUiState())
     val uiState: StateFlow<PriceTrackerUiState> = _uiState.asStateFlow()
 
+    private val priceHistories = mutableMapOf<String, ArrayDeque<Float>>()
+
+    companion object {
+        private const val MAX_HISTORY_SIZE = 50
+    }
+
     init {
-        // Initialize with stock data
         loadInitialStocks()
 
-        // Subscribe to price updates from the data source
         subscribeToPriceUpdatesUseCase()
             .onEach { result ->
                 result.onSuccess { stock ->
@@ -49,15 +56,17 @@ class PriceTrackerViewModel(
             }
             .launchIn(viewModelScope)
 
-        // Observe connection state
         manageConnectionUseCase.observeConnectionState()
             .onEach { connected ->
                 _uiState.update { it.copy(isConnected = connected) }
                 if (connected && _uiState.value.isRunning) {
-                    // Re-subscribe if connection was lost and restored
                     watchSymbolsUseCase.subscribe(DomainConstants.STOCK_SYMBOLS)
                 }
             }
+            .launchIn(viewModelScope)
+
+        observeWatchlistUseCase()
+            .onEach { watchlist -> _uiState.update { it.copy(watchlist = watchlist) } }
             .launchIn(viewModelScope)
     }
 
@@ -66,6 +75,10 @@ class PriceTrackerViewModel(
         viewModelScope.launch {
             val result = getInitialStocksUseCase()
             result.onSuccess { stocks ->
+                stocks.forEach { stock ->
+                    priceHistories.getOrPut(stock.symbol) { ArrayDeque() }
+                        .addLast(stock.price.toFloat())
+                }
                 _uiState.update { state ->
                     state.copy(
                         stocks = stocks
@@ -75,27 +88,21 @@ class PriceTrackerViewModel(
                     )
                 }
             }.onFailure { error ->
-                _uiState.update { it.copy(
-                    loading = false, 
-                    error = "Failed to load initial stocks: ${error.message}"
-                ) }
+                _uiState.update {
+                    it.copy(loading = false, error = "Failed to load initial stocks: ${error.message}")
+                }
             }
         }
     }
 
     fun toggleFeed() {
-        if (_uiState.value.isRunning) {
-            stopFeed()
-        } else {
-            startFeed()
-        }
+        if (_uiState.value.isRunning) stopFeed() else startFeed()
     }
 
     private fun startFeed() {
         _uiState.update { it.copy(isRunning = true, error = null) }
         viewModelScope.launch {
             manageConnectionUseCase.connect()
-            // The subscription happens when connection state becomes true in the observer
             watchSymbolsUseCase.subscribe(DomainConstants.STOCK_SYMBOLS)
         }
     }
@@ -109,6 +116,11 @@ class PriceTrackerViewModel(
     }
 
     private fun updateStockData(stock: Stock) {
+        val history = priceHistories.getOrPut(stock.symbol) { ArrayDeque() }
+        history.addLast(stock.price.toFloat())
+        if (history.size > MAX_HISTORY_SIZE) history.removeFirst()
+        val snapshot = history.toList()
+
         _uiState.update { state ->
             val updatedStocks = state.stocks
                 .map {
@@ -117,7 +129,8 @@ class PriceTrackerViewModel(
                             price = stock.price,
                             change = stock.change,
                             changePercentage = stock.changePercentage,
-                            flashColor = if (stock.change >= 0) Color.Green else Color.Red
+                            flashColor = if (stock.change >= 0) Color.Green else Color.Red,
+                            priceHistory = snapshot
                         )
                     } else {
                         it
@@ -127,9 +140,8 @@ class PriceTrackerViewModel(
             state.copy(stocks = updatedStocks)
         }
 
-        // Reset flash color after delay
         viewModelScope.launch {
-            delay(500) // Shorter flash for better UX
+            delay(500)
             _uiState.update { state ->
                 val resetStocks = state.stocks.map {
                     if (it.symbol == stock.symbol) it.copy(flashColor = null) else it
@@ -137,6 +149,24 @@ class PriceTrackerViewModel(
                 state.copy(stocks = resetStocks)
             }
         }
+    }
+
+    fun selectStock(symbol: String?) {
+        _uiState.update { it.copy(selectedSymbol = symbol) }
+    }
+
+    fun toggleWatchlist(symbol: String) {
+        viewModelScope.launch {
+            if (_uiState.value.watchlist.contains(symbol)) {
+                removeFromWatchlistUseCase(symbol)
+            } else {
+                addToWatchlistUseCase(symbol)
+            }
+        }
+    }
+
+    fun setActiveTab(tab: AppTab) {
+        _uiState.update { it.copy(activeTab = tab, selectedSymbol = null) }
     }
 
     fun toggleDarkMode() {
@@ -160,6 +190,7 @@ class PriceTrackerViewModel(
         symbol = symbol,
         price = price,
         change = change,
-        changePercentage = changePercentage
+        changePercentage = changePercentage,
+        priceHistory = priceHistories[symbol]?.toList() ?: emptyList()
     )
 }

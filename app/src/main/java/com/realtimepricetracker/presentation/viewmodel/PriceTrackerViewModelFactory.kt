@@ -4,9 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.realtimepricetracker.di.AppFactory
 
-/**
- * Factory for creating PriceTrackerViewModel with dependencies from ServiceLocator.
- */
 class PriceTrackerViewModelFactory : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(PriceTrackerViewModel::class.java)) {
@@ -15,10 +12,12 @@ class PriceTrackerViewModelFactory : ViewModelProvider.Factory {
                 getInitialStocksUseCase = AppFactory.getInitialStocksUseCase,
                 subscribeToPriceUpdatesUseCase = AppFactory.subscribeToPriceUpdatesUseCase,
                 watchSymbolsUseCase = AppFactory.watchSymbolsUseCase,
-                manageConnectionUseCase = AppFactory.manageConnectionUseCase
+                manageConnectionUseCase = AppFactory.manageConnectionUseCase,
+                observeWatchlistUseCase = AppFactory.observeWatchlistUseCase,
+                addToWatchlistUseCase = AppFactory.addToWatchlistUseCase,
+                removeFromWatchlistUseCase = AppFactory.removeFromWatchlistUseCase,
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
-
