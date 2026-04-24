@@ -2,6 +2,7 @@ package com.realtimepricetracker.presentation.state
 
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
+import com.realtimepricetracker.domain.entities.PriceAlert
 
 enum class AppTab { MARKETS, WATCHLIST }
 
@@ -25,5 +26,7 @@ data class PriceTrackerUiState(
     val isDarkMode: Boolean = false,
     val loading: Boolean = false,
     val error: String? = null,
-    val selectedSymbol: String? = null
+    val selectedSymbol: String? = null,
+    val alerts: List<PriceAlert> = emptyList(),
+    val showAlertDialogForSymbol: String? = null
 )

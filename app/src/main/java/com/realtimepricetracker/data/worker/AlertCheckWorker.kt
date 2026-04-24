@@ -1,0 +1,47 @@
+package com.realtimepricetracker.data.worker
+
+import android.content.Context
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
+import com.google.gson.Gson
+import com.realtimepricetracker.data.datasource.FinnhubRestDataSource
+import com.realtimepricetracker.data.local.AlertDataSource
+import com.realtimepricetracker.data.notification.NotificationHelper
+import com.realtimepricetracker.domain.entities.AlertCondition
+import kotlinx.coroutines.flow.first
+
+// Runs periodically (every 15 min) to check alerts even when the app is closed.
+// Uses REST API since the WebSocket is not available in the background.
+class AlertCheckWorker(
+    appContext: Context,
+    params: WorkerParameters
+) : CoroutineWorker(appContext, params) {
+
+    override suspend fun doWork(): Result {
+        val gson = Gson()
+        val alertDataSource = AlertDataSource(applicationContext, gson)
+        val restDataSource = FinnhubRestDataSource(gson = gson)
+        val notificationHelper = NotificationHelper(applicationContext)
+
+        val active = alertDataSource.observeAlerts().first().filter { it.isActive }
+        if (active.isEmpty()) return Result.success()
+
+        val symbols = active.map { it.symbol }.distinct()
+        val quotes = restDataSource.getQuotes(symbols).getOrNull() ?: return Result.success()
+        val priceMap = quotes.associate { (symbol, dto) -> symbol to dto.currentPrice }
+
+        active.forEach { alert ->
+            val price = priceMap[alert.symbol] ?: return@forEach
+            val triggered = when (alert.condition) {
+                AlertCondition.ABOVE -> price >= alert.targetPrice
+                AlertCondition.BELOW -> price <= alert.targetPrice
+            }
+            if (triggered) {
+                notificationHelper.notify(alert, price)
+                alertDataSource.remove(alert.id)
+            }
+        }
+
+        return Result.success()
+    }
+}

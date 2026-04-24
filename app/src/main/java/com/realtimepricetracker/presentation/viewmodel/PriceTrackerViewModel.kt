@@ -3,12 +3,19 @@ package com.realtimepricetracker.presentation.viewmodel
 import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.realtimepricetracker.data.notification.NotificationHelper
 import com.realtimepricetracker.domain.config.DomainConstants
+import com.realtimepricetracker.domain.entities.AlertCondition
+import com.realtimepricetracker.domain.entities.PriceAlert
 import com.realtimepricetracker.domain.entities.Stock
+import com.realtimepricetracker.domain.usecases.AddAlertUseCase
 import com.realtimepricetracker.domain.usecases.AddToWatchlistUseCase
+import com.realtimepricetracker.domain.usecases.CheckAlertsUseCase
 import com.realtimepricetracker.domain.usecases.GetInitialStocksUseCase
 import com.realtimepricetracker.domain.usecases.ManageConnectionUseCase
+import com.realtimepricetracker.domain.usecases.ObserveAlertsUseCase
 import com.realtimepricetracker.domain.usecases.ObserveWatchlistUseCase
+import com.realtimepricetracker.domain.usecases.RemoveAlertUseCase
 import com.realtimepricetracker.domain.usecases.RemoveFromWatchlistUseCase
 import com.realtimepricetracker.domain.usecases.SubscribeToPriceUpdatesUseCase
 import com.realtimepricetracker.domain.usecases.WatchSymbolsUseCase
@@ -23,6 +30,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class PriceTrackerViewModel(
     private val getInitialStocksUseCase: GetInitialStocksUseCase,
@@ -32,6 +40,11 @@ class PriceTrackerViewModel(
     private val observeWatchlistUseCase: ObserveWatchlistUseCase,
     private val addToWatchlistUseCase: AddToWatchlistUseCase,
     private val removeFromWatchlistUseCase: RemoveFromWatchlistUseCase,
+    private val observeAlertsUseCase: ObserveAlertsUseCase,
+    private val addAlertUseCase: AddAlertUseCase,
+    private val removeAlertUseCase: RemoveAlertUseCase,
+    private val checkAlertsUseCase: CheckAlertsUseCase,
+    private val notificationHelper: NotificationHelper,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PriceTrackerUiState())
@@ -48,11 +61,10 @@ class PriceTrackerViewModel(
 
         subscribeToPriceUpdatesUseCase()
             .onEach { result ->
-                result.onSuccess { stock ->
-                    updateStockData(stock)
-                }.onFailure { error ->
-                    _uiState.update { it.copy(error = "Update error: ${error.message}") }
-                }
+                result.onSuccess { stock -> updateStockData(stock) }
+                    .onFailure { error ->
+                        _uiState.update { it.copy(error = "Update error: ${error.message}") }
+                    }
             }
             .launchIn(viewModelScope)
 
@@ -68,6 +80,10 @@ class PriceTrackerViewModel(
         observeWatchlistUseCase()
             .onEach { watchlist -> _uiState.update { it.copy(watchlist = watchlist) } }
             .launchIn(viewModelScope)
+
+        observeAlertsUseCase()
+            .onEach { alerts -> _uiState.update { it.copy(alerts = alerts) } }
+            .launchIn(viewModelScope)
     }
 
     private fun loadInitialStocks() {
@@ -81,15 +97,13 @@ class PriceTrackerViewModel(
                 }
                 _uiState.update { state ->
                     state.copy(
-                        stocks = stocks
-                            .map { it.toUiModel() }
-                            .sortedByDescending { it.price },
+                        stocks = stocks.map { it.toUiModel() }.sortedByDescending { it.price },
                         loading = false
                     )
                 }
             }.onFailure { error ->
                 _uiState.update {
-                    it.copy(loading = false, error = "Failed to load initial stocks: ${error.message}")
+                    it.copy(loading = false, error = "Failed to load stocks: ${error.message}")
                 }
             }
         }
@@ -124,29 +138,35 @@ class PriceTrackerViewModel(
         _uiState.update { state ->
             val updatedStocks = state.stocks
                 .map {
-                    if (it.symbol == stock.symbol) {
-                        it.copy(
-                            price = stock.price,
-                            change = stock.change,
-                            changePercentage = stock.changePercentage,
-                            flashColor = if (stock.change >= 0) Color.Green else Color.Red,
-                            priceHistory = snapshot
-                        )
-                    } else {
-                        it
-                    }
+                    if (it.symbol == stock.symbol) it.copy(
+                        price = stock.price,
+                        change = stock.change,
+                        changePercentage = stock.changePercentage,
+                        flashColor = if (stock.change >= 0) Color.Green else Color.Red,
+                        priceHistory = snapshot
+                    ) else it
                 }
                 .sortedByDescending { it.price }
             state.copy(stocks = updatedStocks)
         }
 
+        // Check alerts against current in-memory list — no DataStore I/O on every tick
+        val triggered = checkAlertsUseCase(_uiState.value.alerts, stock.symbol, stock.price)
+        if (triggered.isNotEmpty()) {
+            viewModelScope.launch {
+                triggered.forEach { alert ->
+                    notificationHelper.notify(alert, stock.price)
+                    removeAlertUseCase(alert.id)
+                }
+            }
+        }
+
         viewModelScope.launch {
             delay(500)
             _uiState.update { state ->
-                val resetStocks = state.stocks.map {
+                state.copy(stocks = state.stocks.map {
                     if (it.symbol == stock.symbol) it.copy(flashColor = null) else it
-                }
-                state.copy(stocks = resetStocks)
+                })
             }
         }
     }
@@ -167,6 +187,32 @@ class PriceTrackerViewModel(
 
     fun setActiveTab(tab: AppTab) {
         _uiState.update { it.copy(activeTab = tab, selectedSymbol = null) }
+    }
+
+    fun showAlertDialog(symbol: String) {
+        _uiState.update { it.copy(showAlertDialogForSymbol = symbol) }
+    }
+
+    fun dismissAlertDialog() {
+        _uiState.update { it.copy(showAlertDialogForSymbol = null) }
+    }
+
+    fun addAlert(symbol: String, targetPrice: Double, condition: AlertCondition) {
+        viewModelScope.launch {
+            addAlertUseCase(
+                PriceAlert(
+                    id = UUID.randomUUID().toString(),
+                    symbol = symbol,
+                    targetPrice = targetPrice,
+                    condition = condition
+                )
+            )
+            dismissAlertDialog()
+        }
+    }
+
+    fun removeAlert(id: String) {
+        viewModelScope.launch { removeAlertUseCase(id) }
     }
 
     fun toggleDarkMode() {

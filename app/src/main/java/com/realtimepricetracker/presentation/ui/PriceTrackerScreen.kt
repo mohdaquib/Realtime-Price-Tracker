@@ -26,11 +26,14 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,6 +53,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.realtimepricetracker.domain.entities.AlertCondition
+import com.realtimepricetracker.domain.entities.PriceAlert
 import com.realtimepricetracker.presentation.state.AppTab
 import com.realtimepricetracker.presentation.state.PriceTrackerUiState
 import com.realtimepricetracker.presentation.state.StockUiModel
@@ -78,6 +83,10 @@ fun PriceTrackerScreen(viewModel: PriceTrackerViewModel) {
                 onChartDismiss = { viewModel.selectStock(null) },
                 onWatchlistToggle = { viewModel.toggleWatchlist(it) },
                 onTabSelected = { viewModel.setActiveTab(it) },
+                onShowAlertDialog = { viewModel.showAlertDialog(it) },
+                onDismissAlertDialog = { viewModel.dismissAlertDialog() },
+                onAddAlert = { symbol, price, condition -> viewModel.addAlert(symbol, price, condition) },
+                onRemoveAlert = { viewModel.removeAlert(it) },
                 modifier = Modifier.padding(padding)
             )
         }
@@ -91,6 +100,10 @@ fun PriceTrackerScreenContent(
     onChartDismiss: () -> Unit = {},
     onWatchlistToggle: (String) -> Unit = {},
     onTabSelected: (AppTab) -> Unit = {},
+    onShowAlertDialog: (String) -> Unit = {},
+    onDismissAlertDialog: () -> Unit = {},
+    onAddAlert: (symbol: String, price: Double, condition: AlertCondition) -> Unit = { _, _, _ -> },
+    onRemoveAlert: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -151,9 +164,28 @@ fun PriceTrackerScreenContent(
         ) {
             val selectedStock = uiState.stocks.find { it.symbol == uiState.selectedSymbol }
             if (selectedStock != null) {
-                StockChartPanel(stock = selectedStock, onDismiss = onChartDismiss)
+                StockChartPanel(
+                    stock = selectedStock,
+                    alerts = uiState.alerts.filter { it.symbol == selectedStock.symbol },
+                    onDismiss = onChartDismiss,
+                    onSetAlert = { onShowAlertDialog(selectedStock.symbol) },
+                    onRemoveAlert = onRemoveAlert
+                )
             }
         }
+    }
+
+    if (uiState.showAlertDialogForSymbol != null) {
+        val price = uiState.stocks
+            .find { it.symbol == uiState.showAlertDialogForSymbol }?.price ?: 0.0
+        SetAlertDialog(
+            symbol = uiState.showAlertDialogForSymbol,
+            currentPrice = price,
+            onConfirm = { targetPrice, condition ->
+                onAddAlert(uiState.showAlertDialogForSymbol, targetPrice, condition)
+            },
+            onDismiss = onDismissAlertDialog
+        )
     }
 }
 
@@ -206,7 +238,13 @@ private fun PriceList(
 }
 
 @Composable
-private fun StockChartPanel(stock: StockUiModel, onDismiss: () -> Unit) {
+private fun StockChartPanel(
+    stock: StockUiModel,
+    alerts: List<PriceAlert>,
+    onDismiss: () -> Unit,
+    onSetAlert: () -> Unit,
+    onRemoveAlert: (String) -> Unit,
+) {
     val lineColor = if (stock.change >= 0) SuccessGreen else ErrorRed
 
     Card(
@@ -234,12 +272,23 @@ private fun StockChartPanel(stock: StockUiModel, onDismiss: () -> Unit) {
                         color = lineColor
                     )
                 }
-                IconButton(onClick = onDismiss) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close chart",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Row {
+                    IconButton(onClick = onSetAlert) {
+                        Icon(
+                            imageVector = if (alerts.isNotEmpty()) Icons.Default.NotificationsActive
+                                          else Icons.Outlined.NotificationsNone,
+                            contentDescription = "Set price alert",
+                            tint = if (alerts.isNotEmpty()) WarningOrange
+                                   else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Close chart",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
@@ -267,6 +316,42 @@ private fun StockChartPanel(stock: StockUiModel, onDismiss: () -> Unit) {
                     )
                 }
             }
+
+            if (alerts.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                HorizontalDivider()
+                alerts.forEach { alert ->
+                    AlertRow(alert = alert, onRemove = { onRemoveAlert(alert.id) })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AlertRow(alert: PriceAlert, onRemove: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val conditionText = when (alert.condition) {
+            AlertCondition.ABOVE -> "above"
+            AlertCondition.BELOW -> "below"
+        }
+        Text(
+            text = "Alert when $conditionText ${"%.2f".format(alert.targetPrice)}",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        IconButton(onClick = onRemove, modifier = Modifier.size(28.dp)) {
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Remove alert",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
