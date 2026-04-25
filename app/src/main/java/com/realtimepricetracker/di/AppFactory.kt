@@ -39,7 +39,7 @@ object AppFactory {
     }
 
     private val restDataSource by lazy { FinnhubRestDataSource(gson = gson) }
-    private val webSocketDataSource by lazy { WebSocketDataSource(appScope) }
+    private val webSocketDataSource by lazy { WebSocketDataSource(appScope, appContext) }
 
     val priceRepository: PriceRepository by lazy {
         PriceRepositoryImpl(webSocketDataSource, restDataSource, gson)
