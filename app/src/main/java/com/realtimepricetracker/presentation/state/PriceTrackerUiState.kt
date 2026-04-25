@@ -28,5 +28,7 @@ data class PriceTrackerUiState(
     val error: String? = null,
     val selectedSymbol: String? = null,
     val alerts: List<PriceAlert> = emptyList(),
-    val showAlertDialogForSymbol: String? = null
+    val showAlertDialogForSymbol: String? = null,
+    val isOffline: Boolean = false,
+    val cacheTimestamp: Long? = null,
 )

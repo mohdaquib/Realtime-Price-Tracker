@@ -3,6 +3,7 @@ package com.realtimepricetracker.data.repositories
 import com.realtimepricetracker.data.datasource.FinnhubRestDataSource
 import com.realtimepricetracker.data.datasource.WebSocketDataSource
 import com.realtimepricetracker.data.dto.FinnhubTradeDto
+import com.realtimepricetracker.data.local.StockCacheDataSource
 import com.realtimepricetracker.domain.entities.Stock
 import com.realtimepricetracker.domain.repositories.PriceRepository
 import com.google.gson.Gson
@@ -10,14 +11,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.filterNotNull
 
-/**
- * Implementation of PriceRepository using Finnhub API.
- * Uses REST API for initial data and WebSocket for real-time updates.
- */
 class PriceRepositoryImpl(
     private val webSocketDataSource: WebSocketDataSource,
     private val restDataSource: FinnhubRestDataSource,
-    private val gson: Gson
+    private val gson: Gson,
+    private val stockCacheDataSource: StockCacheDataSource,
 ) : PriceRepository {
 
     // Cache for previous prices to calculate changes
@@ -36,11 +34,11 @@ class PriceRepositoryImpl(
                             change = quoteDto.change,
                             changePercentage = quoteDto.percentChange
                         )
-                        // Cache the initial price for change calculations
                         priceCache[symbol] = quoteDto.currentPrice
                         stock
                     }.sortedByDescending { it.price }
 
+                    if (stocks.isNotEmpty()) stockCacheDataSource.save(stocks)
                     Result.success(stocks)
                 },
                 onFailure = { error ->
@@ -98,8 +96,7 @@ class PriceRepositoryImpl(
         }
     }
 
-    override suspend fun sendPriceUpdate(stock: Stock): Result<Unit> {
-        // For real API, we don't send updates, we just receive them
-        return Result.success(Unit)
-    }
+    override suspend fun sendPriceUpdate(stock: Stock): Result<Unit> = Result.success(Unit)
+
+    override suspend fun getCachedStocks(): Pair<List<Stock>, Long?> = stockCacheDataSource.load()
 }

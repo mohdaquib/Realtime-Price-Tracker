@@ -11,6 +11,7 @@ import com.realtimepricetracker.domain.entities.Stock
 import com.realtimepricetracker.domain.usecases.AddAlertUseCase
 import com.realtimepricetracker.domain.usecases.AddToWatchlistUseCase
 import com.realtimepricetracker.domain.usecases.CheckAlertsUseCase
+import com.realtimepricetracker.domain.usecases.GetCachedStocksUseCase
 import com.realtimepricetracker.domain.usecases.GetInitialStocksUseCase
 import com.realtimepricetracker.domain.usecases.ManageConnectionUseCase
 import com.realtimepricetracker.domain.usecases.ObserveAlertsUseCase
@@ -34,6 +35,7 @@ import java.util.UUID
 
 class PriceTrackerViewModel(
     private val getInitialStocksUseCase: GetInitialStocksUseCase,
+    private val getCachedStocksUseCase: GetCachedStocksUseCase,
     private val subscribeToPriceUpdatesUseCase: SubscribeToPriceUpdatesUseCase,
     private val watchSymbolsUseCase: WatchSymbolsUseCase,
     private val manageConnectionUseCase: ManageConnectionUseCase,
@@ -87,23 +89,56 @@ class PriceTrackerViewModel(
     }
 
     private fun loadInitialStocks() {
-        _uiState.update { it.copy(loading = true, error = null) }
         viewModelScope.launch {
-            val result = getInitialStocksUseCase()
-            result.onSuccess { stocks ->
-                stocks.forEach { stock ->
-                    priceHistories.getOrPut(stock.symbol) { ArrayDeque() }
-                        .addLast(stock.price.toFloat())
+            // Phase 1: show cache immediately so the screen is never blank while offline
+            val (cached, timestamp) = getCachedStocksUseCase()
+            if (cached.isNotEmpty()) {
+                cached.forEach { stock ->
+                    priceHistories.getOrPut(stock.symbol) { ArrayDeque() }.addLast(stock.price.toFloat())
                 }
                 _uiState.update { state ->
                     state.copy(
-                        stocks = stocks.map { it.toUiModel() }.sortedByDescending { it.price },
-                        loading = false
+                        stocks = cached.map { it.toUiModel() }.sortedByDescending { it.price },
+                        isOffline = true,
+                        cacheTimestamp = timestamp,
+                        loading = false,
+                        error = null,
                     )
                 }
+            } else {
+                _uiState.update { it.copy(loading = true, error = null) }
+            }
+
+            // Phase 2: fetch fresh data from REST — replaces cache on success
+            val result = getInitialStocksUseCase()
+            result.onSuccess { stocks ->
+                if (stocks.isNotEmpty()) {
+                    stocks.forEach { stock ->
+                        priceHistories.getOrPut(stock.symbol) { ArrayDeque() }.addLast(stock.price.toFloat())
+                    }
+                    _uiState.update { state ->
+                        state.copy(
+                            stocks = stocks.map { it.toUiModel() }.sortedByDescending { it.price },
+                            isOffline = false,
+                            cacheTimestamp = null,
+                            loading = false,
+                            error = null,
+                        )
+                    }
+                } else {
+                    _uiState.update { state ->
+                        state.copy(
+                            loading = false,
+                            error = if (state.stocks.isEmpty()) "No data available" else null,
+                        )
+                    }
+                }
             }.onFailure { error ->
-                _uiState.update {
-                    it.copy(loading = false, error = "Failed to load stocks: ${error.message}")
+                _uiState.update { state ->
+                    state.copy(
+                        loading = false,
+                        error = if (state.stocks.isEmpty()) "Failed to load stocks: ${error.message}" else null,
+                    )
                 }
             }
         }

@@ -32,4 +32,11 @@ interface PriceRepository {
      * Send a price update through the network (for mock/testing)
      */
     suspend fun sendPriceUpdate(stock: Stock): Result<Unit>
+
+    /**
+     * Load the last successfully fetched prices from local cache.
+     * Returns the stocks and the epoch-ms timestamp when they were cached,
+     * or an empty list + null if no cache exists yet.
+     */
+    suspend fun getCachedStocks(): Pair<List<Stock>, Long?>
 }

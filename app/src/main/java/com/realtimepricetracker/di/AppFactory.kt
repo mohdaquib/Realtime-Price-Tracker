@@ -5,6 +5,7 @@ import com.google.gson.Gson
 import com.realtimepricetracker.data.datasource.FinnhubRestDataSource
 import com.realtimepricetracker.data.datasource.WebSocketDataSource
 import com.realtimepricetracker.data.local.AlertDataSource
+import com.realtimepricetracker.data.local.StockCacheDataSource
 import com.realtimepricetracker.data.local.WatchlistDataSource
 import com.realtimepricetracker.data.notification.NotificationHelper
 import com.realtimepricetracker.data.repositories.AlertRepositoryImpl
@@ -18,6 +19,7 @@ import com.realtimepricetracker.domain.repositories.WatchlistRepository
 import com.realtimepricetracker.domain.usecases.AddAlertUseCase
 import com.realtimepricetracker.domain.usecases.AddToWatchlistUseCase
 import com.realtimepricetracker.domain.usecases.CheckAlertsUseCase
+import com.realtimepricetracker.domain.usecases.GetCachedStocksUseCase
 import com.realtimepricetracker.domain.usecases.GetInitialStocksUseCase
 import com.realtimepricetracker.domain.usecases.ManageConnectionUseCase
 import com.realtimepricetracker.domain.usecases.ObserveAlertsUseCase
@@ -40,9 +42,10 @@ object AppFactory {
 
     private val restDataSource by lazy { FinnhubRestDataSource(gson = gson) }
     private val webSocketDataSource by lazy { WebSocketDataSource(appScope, appContext) }
+    private val stockCacheDataSource by lazy { StockCacheDataSource(appContext, gson) }
 
     val priceRepository: PriceRepository by lazy {
-        PriceRepositoryImpl(webSocketDataSource, restDataSource, gson)
+        PriceRepositoryImpl(webSocketDataSource, restDataSource, gson, stockCacheDataSource)
     }
     val connectionRepository: ConnectionRepository by lazy {
         ConnectionRepositoryImpl(webSocketDataSource)
@@ -60,6 +63,7 @@ object AppFactory {
 
     // Price use cases
     val getInitialStocksUseCase by lazy { GetInitialStocksUseCase(priceRepository) }
+    val getCachedStocksUseCase by lazy { GetCachedStocksUseCase(priceRepository) }
     val subscribeToPriceUpdatesUseCase by lazy { SubscribeToPriceUpdatesUseCase(priceRepository) }
     val watchSymbolsUseCase by lazy { WatchSymbolsUseCase(priceRepository) }
     val manageConnectionUseCase by lazy { ManageConnectionUseCase(connectionRepository) }

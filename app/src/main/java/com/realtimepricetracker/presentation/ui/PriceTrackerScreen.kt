@@ -2,8 +2,10 @@ package com.realtimepricetracker.presentation.ui
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -119,6 +121,8 @@ fun PriceTrackerScreenContent(
                 text = { Text("Watchlist") }
             )
         }
+
+        OfflineBanner(isOffline = uiState.isOffline, cacheTimestamp = uiState.cacheTimestamp)
 
         Box(
             modifier = Modifier
@@ -433,6 +437,44 @@ fun StockRow(
                 tint = if (isWatched) WarningOrange else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+    }
+}
+
+@Composable
+private fun OfflineBanner(isOffline: Boolean, cacheTimestamp: Long?) {
+    AnimatedVisibility(
+        visible = isOffline,
+        enter = expandVertically() + fadeIn(),
+        exit = shrinkVertically() + fadeOut(),
+    ) {
+        val message = if (cacheTimestamp != null) {
+            "Showing cached prices from ${formatStaleness(cacheTimestamp)} ago"
+        } else {
+            "Offline — reconnecting…"
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(WarningOrange.copy(alpha = 0.15f))
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.labelSmall,
+                color = WarningOrange,
+            )
+        }
+    }
+}
+
+private fun formatStaleness(cachedAt: Long): String {
+    val seconds = (System.currentTimeMillis() - cachedAt) / 1_000
+    return when {
+        seconds < 60 -> "${seconds}s"
+        seconds < 3_600 -> "${seconds / 60}m"
+        else -> "${seconds / 3_600}h"
     }
 }
 

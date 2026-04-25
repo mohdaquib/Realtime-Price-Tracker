@@ -10,6 +10,7 @@ class PriceTrackerViewModelFactory : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             return PriceTrackerViewModel(
                 getInitialStocksUseCase = AppFactory.getInitialStocksUseCase,
+                getCachedStocksUseCase = AppFactory.getCachedStocksUseCase,
                 subscribeToPriceUpdatesUseCase = AppFactory.subscribeToPriceUpdatesUseCase,
                 watchSymbolsUseCase = AppFactory.watchSymbolsUseCase,
                 manageConnectionUseCase = AppFactory.manageConnectionUseCase,

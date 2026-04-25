@@ -54,7 +54,11 @@ class FinnhubRestDataSource(
             val results = symbols.mapNotNull { symbol ->
                 getQuote(symbol).getOrNull()?.let { symbol to it }
             }
-            Result.success(results)
+            if (results.isEmpty() && symbols.isNotEmpty()) {
+                Result.failure(Exception("Failed to fetch any quotes"))
+            } else {
+                Result.success(results)
+            }
         } catch (e: Exception) {
             Result.failure(Exception("Failed to fetch quotes: ${e.message}"))
         }
