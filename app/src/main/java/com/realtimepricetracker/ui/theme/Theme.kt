@@ -1,59 +1,60 @@
 package com.realtimepricetracker.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80,
-    background = DarkBackground,
-    surface = DarkSurface
+private val TradingDarkColorScheme = darkColorScheme(
+    primary                = AccentGold,
+    onPrimary              = Color(0xFF1A1200),
+    primaryContainer       = Color(0xFF3D2F00),
+    onPrimaryContainer     = AccentGold,
+    secondary              = TradingMuted,
+    onSecondary            = TradingBg,
+    secondaryContainer     = TradingSurfaceVariant,
+    onSecondaryContainer   = TradingOnBg,
+    tertiary               = AccentBlue,
+    onTertiary             = Color(0xFF001030),
+    background             = TradingBg,
+    onBackground           = TradingOnBg,
+    surface                = TradingSurface,
+    onSurface              = TradingOnSurface,
+    surfaceVariant         = TradingSurfaceVariant,
+    onSurfaceVariant       = TradingMuted,
+    outline                = TradingSurfaceVariant,
+    outlineVariant         = TradingSurfaceVariant,
+    inverseSurface         = TradingOnBg,
+    inverseOnSurface       = TradingBg,
+    error                  = BearRed,
+    onError                = Color(0xFF1A0000),
+    errorContainer         = BearRed.copy(alpha = 0.15f),
+    onErrorContainer       = BearRed,
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
-    background = LightBackground,
-    surface = LightSurface
+// Minimal light scheme — user can toggle; not the primary experience
+private val TradingLightColorScheme = lightColorScheme(
+    primary            = Color(0xFF6650A4),
+    background         = LightBackground,
+    surface            = LightSurface,
+    onBackground       = Color(0xFF1C1B1F),
+    onSurface          = Color(0xFF1C1B1F),
+    onSurfaceVariant   = Color(0xFF49454F),
+    error              = BearRed,
 )
 
-/**
- * Application theme that supports both light and dark modes.
- * The theme can be controlled by the [darkTheme] parameter.
- *
- * @param darkTheme If true, applies dark color scheme. If false, applies light color scheme.
- * @param dynamicColor If true, uses dynamic colors on Android 12+ (Material You).
- * @param content Composable content to apply theme to.
- */
 @Composable
 fun RealtimePriceTrackerTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
+    darkTheme: Boolean = true,
+    content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
+    // Dynamic colour (Material You) is intentionally disabled — it overrides the
+    // trading colour palette which is the core of the visual identity.
+    val colorScheme = if (darkTheme) TradingDarkColorScheme else TradingLightColorScheme
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
-        content = content
+        content = content,
     )
 }

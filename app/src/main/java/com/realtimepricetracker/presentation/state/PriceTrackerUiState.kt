@@ -24,7 +24,7 @@ data class PriceTrackerUiState(
     val activeTab: AppTab = AppTab.MARKETS,
     val isConnected: Boolean = false,
     val isRunning: Boolean = false,
-    val isDarkMode: Boolean = false,
+    val isDarkMode: Boolean = true,
     val loading: Boolean = false,
     val error: String? = null,
     val selectedSymbol: String? = null,
