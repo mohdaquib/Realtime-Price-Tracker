@@ -23,6 +23,7 @@ import com.realtimepricetracker.domain.usecases.GetCachedStocksUseCase
 import com.realtimepricetracker.domain.usecases.GetInitialStocksUseCase
 import com.realtimepricetracker.domain.usecases.ManageConnectionUseCase
 import com.realtimepricetracker.domain.usecases.ObserveAlertsUseCase
+import com.realtimepricetracker.domain.usecases.ObserveOrderBookUseCase
 import com.realtimepricetracker.domain.usecases.ObserveWatchlistUseCase
 import com.realtimepricetracker.domain.usecases.RemoveAlertUseCase
 import com.realtimepricetracker.domain.usecases.RemoveFromWatchlistUseCase
@@ -67,6 +68,7 @@ object AppFactory {
     val subscribeToPriceUpdatesUseCase by lazy { SubscribeToPriceUpdatesUseCase(priceRepository) }
     val watchSymbolsUseCase by lazy { WatchSymbolsUseCase(priceRepository) }
     val manageConnectionUseCase by lazy { ManageConnectionUseCase(connectionRepository) }
+    val observeOrderBookUseCase by lazy { ObserveOrderBookUseCase() }
 
     // Watchlist use cases
     val observeWatchlistUseCase by lazy { ObserveWatchlistUseCase(watchlistRepository) }

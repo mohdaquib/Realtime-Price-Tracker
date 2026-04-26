@@ -22,6 +22,7 @@ class PriceTrackerViewModelFactory : ViewModelProvider.Factory {
                 removeAlertUseCase = AppFactory.removeAlertUseCase,
                 checkAlertsUseCase = AppFactory.checkAlertsUseCase,
                 notificationHelper = AppFactory.notificationHelper,
+                observeOrderBookUseCase = AppFactory.observeOrderBookUseCase,
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

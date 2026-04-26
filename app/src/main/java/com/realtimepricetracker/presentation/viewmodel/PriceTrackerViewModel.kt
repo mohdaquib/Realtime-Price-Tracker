@@ -15,6 +15,7 @@ import com.realtimepricetracker.domain.usecases.GetCachedStocksUseCase
 import com.realtimepricetracker.domain.usecases.GetInitialStocksUseCase
 import com.realtimepricetracker.domain.usecases.ManageConnectionUseCase
 import com.realtimepricetracker.domain.usecases.ObserveAlertsUseCase
+import com.realtimepricetracker.domain.usecases.ObserveOrderBookUseCase
 import com.realtimepricetracker.domain.usecases.ObserveWatchlistUseCase
 import com.realtimepricetracker.domain.usecases.RemoveAlertUseCase
 import com.realtimepricetracker.domain.usecases.RemoveFromWatchlistUseCase
@@ -23,6 +24,7 @@ import com.realtimepricetracker.domain.usecases.WatchSymbolsUseCase
 import com.realtimepricetracker.presentation.state.AppTab
 import com.realtimepricetracker.presentation.state.PriceTrackerUiState
 import com.realtimepricetracker.presentation.state.StockUiModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,12 +49,14 @@ class PriceTrackerViewModel(
     private val removeAlertUseCase: RemoveAlertUseCase,
     private val checkAlertsUseCase: CheckAlertsUseCase,
     private val notificationHelper: NotificationHelper,
+    private val observeOrderBookUseCase: ObserveOrderBookUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PriceTrackerUiState())
     val uiState: StateFlow<PriceTrackerUiState> = _uiState.asStateFlow()
 
     private val priceHistories = mutableMapOf<String, ArrayDeque<Float>>()
+    private var orderBookJob: Job? = null
 
     companion object {
         private const val MAX_HISTORY_SIZE = 50
@@ -207,7 +211,17 @@ class PriceTrackerViewModel(
     }
 
     fun selectStock(symbol: String?) {
-        _uiState.update { it.copy(selectedSymbol = symbol) }
+        orderBookJob?.cancel()
+        orderBookJob = null
+        _uiState.update { it.copy(selectedSymbol = symbol, orderBook = null) }
+        if (symbol != null) {
+            val price = _uiState.value.stocks.find { it.symbol == symbol }?.price ?: 0.0
+            orderBookJob = viewModelScope.launch {
+                observeOrderBookUseCase(symbol, price).collect { book ->
+                    _uiState.update { it.copy(orderBook = book) }
+                }
+            }
+        }
     }
 
     fun toggleWatchlist(symbol: String) {
