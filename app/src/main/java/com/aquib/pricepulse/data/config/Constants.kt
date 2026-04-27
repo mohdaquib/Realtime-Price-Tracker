@@ -1,7 +1,7 @@
 ﻿package com.aquib.pricepulse.data.config
 
 object DataConstants {
-    const val API_KEY = "d7ktmt1r01qiqbcvnhf0d7ktmt1r01qiqbcvnhfg" // Replace with your actual Finnhub API key
+    const val API_KEY = "your-api-key" // Replace with your actual Finnhub API key
 
     // Finnhub WebSocket API for real-time stock data
     const val WS_URL = "wss://ws.finnhub.io?token=${API_KEY}"

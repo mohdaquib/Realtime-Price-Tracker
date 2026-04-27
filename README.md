@@ -1,353 +1,304 @@
-# Realtime Price Tracker 📊
+<div align="center">
 
-A modern Android application built with **Clean Architecture** and **Jetpack Compose** for real-time stock price tracking and updates.
+<img src="design/ic_launcher_full.svg" width="108" alt="PricePulse logo"/>
 
-## 🎯 Overview
+# PricePulse
 
-Realtime Price Tracker is a demonstration of best practices in Android development, featuring:
-- **Clean Architecture** with clear separation of concerns
-- **MVVM** pattern for UI state management
-- **StateFlow** for reactive state management
-- **Modern Compose UI** with dark theme support
-- **WebSocket integration** for real-time price updates
-- **Comprehensive error handling** with Result wrappers
+**Real-time stock price tracking for Android**
 
-## 🏗️ Architecture
+[![API](https://img.shields.io/badge/API-24%2B-brightgreen)](https://android-arsenal.com/api?level=24)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.3-7F52FF)](https://kotlinlang.org)
+[![Compose](https://img.shields.io/badge/Jetpack%20Compose-BOM%202025-4285F4)](https://developer.android.com/jetpack/compose)
+[![Architecture](https://img.shields.io/badge/Clean%20Architecture-MVVM-F0B90B)](https://developer.android.com/topic/architecture)
+[![License](https://img.shields.io/badge/License-MIT-02C076)](LICENSE)
 
-### Layered Architecture Diagram
+*Live prices · Animated charts · Price alerts · Order book · Watchlist · Offline support*
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    PRESENTATION LAYER (UI)                  │
-│  ┌──────────────────────────────────────────────────────┐   │
-│  │  PriceTrackerScreen (Composables)                   │   │
-│  │  ├─ TopBar (with connection status)                 │   │
-│  │  ├─ StockRow (individual price items)               │   │
-│  │  └─ Theming (Light/Dark mode)                       │   │
-│  └──────────────────────────────────────────────────────┘   │
-│            ▲ StateFlow<PriceTrackerUiState>                 │
-└────────────┼─────────────────────────────────────────────────┘
-             │
-┌────────────┼─────────────────────────────────────────────────┐
-│            │       PRESENTATION LAYER (ViewModel)            │
-│  ┌─────────▼──────────────────────────────────────────────┐  │
-│  │  PriceTrackerViewModel                               │  │
-│  │  ├─ Manages UI state (StockList, Connection)         │  │
-│  │  ├─ Orchestrates use cases                           │  │
-│  │  ├─ Handles lifecycle                                │  │
-│  │  └─ Toggles dark mode                                │  │
-│  └────────────────────────────────────────────────────────┘  │
-│                 ▲ Calls                                      │
-└─────────────────┼──────────────────────────────────────────────┘
-                  │
-┌─────────────────┼──────────────────────────────────────────────┐
-│                 │        DOMAIN LAYER                         │
-│  ┌──────────────▼────────────────────────────────────────┐   │
-│  │  Use Cases                                           │   │
-│  │  ├─ GetInitialStocksUseCase                          │   │
-│  │  ├─ SubscribeToPriceUpdatesUseCase                  │   │
-│  │  ├─ SendPriceUpdateUseCase                          │   │
-│  │  └─ ManageConnectionUseCase                         │   │
-│  └────────────────┬────────────────────────────────────┘   │
-│                   │                                          │
-│  ┌────────────────▼────────────────────────────────────┐   │
-│  │  Domain Models & Repositories (Interfaces)         │   │
-│  │  ├─ Stock (Entity)                                 │   │
-│  │  ├─ PriceRepository (Interface)                    │   │
-│  │  ├─ ConnectionRepository (Interface)               │   │
-│  │  └─ DomainConstants                                │   │
-│  └────────────────┬────────────────────────────────────┘   │
-└────────────────────┼──────────────────────────────────────────┘
-                     │
-┌────────────────────┼──────────────────────────────────────────┐
-│                    │      DATA LAYER                          │
-│  ┌─────────────────▼───────────────────────────────────┐    │
-│  │  Repositories (Implementations)                    │    │
-│  │  ├─ PriceRepositoryImpl                            │    │
-│  │  └─ ConnectionRepositoryImpl                       │    │
-│  └─────────────────┬───────────────────────────────────┘    │
-│                    │                                         │
-│  ┌─────────────────▼───────────────────────────────────┐    │
-│  │  Data Sources                                      │    │
-│  │  └─ WebSocketDataSource (OkHttp WebSocket)        │    │
-│  └─────────────────┬───────────────────────────────────┘    │
-│                    │                                         │
-│  ┌─────────────────▼───────────────────────────────────┐    │
-│  │  DTOs & Mappers                                    │    │
-│  │  ├─ PriceUpdateDto                                │    │
-│  │  └─ toDomain() mapping                            │    │
-│  └─────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────┘
-```
+</div>
 
-### Layer Responsibilities
+---
 
-#### 🎭 **Presentation Layer** (`presentation/`)
-- **Purpose**: Handle UI rendering and user interaction
-- **Components**:
-  - `PriceTrackerScreen`: Main composable screen
-  - `PriceTrackerViewModel`: State management and business logic coordination
-  - `PriceTrackerUiState`: UI state holder
-  - `StockUiModel`: UI representation of stock data
+## Demo
 
-#### 🎯 **Domain Layer** (`domain/`)
-- **Purpose**: Contain core business logic and entities (framework-independent)
-- **Components**:
-  - **Entities**: `Stock` - core business model
-  - **Repositories (Interfaces)**: `PriceRepository`, `ConnectionRepository`
-  - **Use Cases**: Single-responsibility classes orchestrating domain logic
-    - `GetInitialStocksUseCase`: Fetch stocks
-    - `SubscribeToPriceUpdatesUseCase`: Subscribe to real-time updates
-    - `SendPriceUpdateUseCase`: Send updates
-    - `ManageConnectionUseCase`: Handle connection lifecycle
-  - **Constants**: `DomainConstants`
-
-#### 💾 **Data Layer** (`data/`)
-- **Purpose**: Implement repository interfaces and manage external data sources
-- **Components**:
-  - **Repositories (Implementations)**: Concrete implementations of domain repositories
-  - **Data Sources**: Low-level network operations (`WebSocketDataSource`)
-  - **DTOs**: Data transfer objects with mapping functions to domain entities
-  - **Constants**: Data layer configuration
-
-#### 🔌 **Dependency Injection** (`di/`)
-- **ServiceLocator**: Singleton pattern for dependency management
-- Provides instances of repositories, use cases, and data sources
-
-## 📦 Package Structure
+> **To add your demo:** convert `app/src/main/res/raw/realtime_price_app_recording.mp4` to a GIF
+> with [ScreenToGif](https://www.screentogif.com/) and drop it in a `docs/` folder.
 
 ```
-app/src/main/java/com/realtimepricetracker/
-├── di/
-│   └── ServiceLocator.kt              # Dependency container
-├── domain/
-│   ├── config/
-│   │   └── Constants.kt               # Domain-level constants
-│   ├── entities/
-│   │   └── Stock.kt                   # Core business entity
-│   ├── repositories/
-│   │   ├── PriceRepository.kt        # Price operations interface
-│   │   └── ConnectionRepository.kt    # Connection lifecycle interface
-│   └── usecases/
-│       ├── GetInitialStocksUseCase.kt
-│       ├── SubscribeToPriceUpdatesUseCase.kt
-│       ├── SendPriceUpdateUseCase.kt
-│       └── ManageConnectionUseCase.kt
-├── data/
-│   ├── config/
-│   │   └── Constants.kt               # Data layer config (WS_URL)
-│   ├── datasource/
-│   │   └── WebSocketDataSource.kt     # WebSocket handling
-│   ├── dto/
-│   │   └── PriceUpdateDto.kt         # Network DTO + mappers
-│   └── repositories/
-│       ├── PriceRepositoryImpl.kt
-│       └── ConnectionRepositoryImpl.kt
-├── presentation/
-│   ├── state/
-│   │   └── PriceTrackerUiState.kt    # UI state models
-│   ├── ui/
-│   │   └── PriceTrackerScreen.kt     # Composable screens
-│   └── viewmodel/
-│       ├── PriceTrackerViewModel.kt  # ViewModel
-│       └── PriceTrackerViewModelFactory.kt
-├── ui/
-│   └── theme/
-│       ├── Theme.kt                   # Theme with dark mode
-│       ├── Color.kt                   # Color palette
-│       └── Type.kt                    # Typography
-├── MainActivity.kt
-└── Constants.kt                       # App-level constants
+docs/
+└── demo.gif   ← replace this placeholder
 ```
 
-## 🚀 Key Features
+<!-- ![PricePulse demo](docs/demo.gif) -->
 
-### 1. **Clean Architecture**
-- Domain layer contains no Android dependencies
-- Data layer isolated from presentation layer
-- Easy to test each layer independently
+---
 
-### 2. **MVVM with StateFlow**
-```kotlin
-val uiState: StateFlow<PriceTrackerUiState> = _uiState.asStateFlow()
-// Reactive state updates trigger UI recomposition
+## Why PricePulse?
+
+Most Android portfolio projects stop at a basic list that fetches data once.
+PricePulse goes further by solving the problems that come up in real trading apps:
+
+| Real-world problem | How PricePulse handles it |
+|--------------------|--------------------------|
+| Live data at sub-second latency | Finnhub WebSocket with 30 s ping keepalive |
+| Network drops killing the feed | Exponential back-off reconnect (1 s → 64 s + jitter) |
+| Cold-start with no data yet | REST snapshot on launch — list is never blank |
+| User goes offline mid-session | Cached prices shown with "X min ago" banner |
+| Alerts when app is closed | WorkManager `AlertCheckWorker` runs every 15 min |
+| Charts that feel alive | Cubic Bézier path + 600 ms animated clip per update |
+
+The goal was not just to make a demo — it was to build something that handles
+the same edge cases a production trading app would need to handle.
+
+---
+
+## Features
+
+### Live data
+- **WebSocket feed** via [Finnhub](https://finnhub.io/) for 25 NASDAQ stocks simultaneously
+- **REST snapshot** on every launch so the list is populated before the socket connects
+- **Price flash animation** — each row briefly glows green (up) or red (down) on every tick
+
+### Charts & visualisation
+- **Animated line chart** — cubic Bézier curves, vertical gradient fill, 600 ms left-to-right entry
+- **Latest-price dot** with glow ring pinned to the chart's current endpoint
+- **Order book panel** — bids (green) vs. asks (red) with proportional depth bars and spread display
+
+### Alerts & watchlist
+- **Price alerts** — set ABOVE or BELOW a target price; system notification fires when triggered
+- **Background polling** — WorkManager job checks alerts every 15 minutes, even when the app is closed
+- **Watchlist** — star any symbol; persisted across sessions with DataStore
+
+### App quality
+- **Offline cache** — SharedPreferences-backed snapshot; shows "cached · N min ago" banner
+- **Dark / Light mode toggle** — Binance-inspired dark palette by default
+- **Android 12 SplashScreen API** — adaptive icon on dark canvas with 400 ms fade-out
+- **Edge-to-edge layout**, Material 3, and dynamic typography
+
+---
+
+## Architecture
+
+Clean Architecture with three strictly separated layers and MVVM in the presentation tier.
+Hilt wires the dependency graph at compile time.
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        PRESENTATION LAYER                           │
+│                                                                     │
+│  ┌──────────────────────────┐      ┌─────────────────────────────┐  │
+│  │    Jetpack Compose UI    │◀─────│    PriceTrackerViewModel    │  │
+│  │                          │      │                             │  │
+│  │  PriceTrackerScreen      │      │  StateFlow<PriceTrackerUI   │  │
+│  │  ├─ TradingTopBar        │      │  State>                     │  │
+│  │  ├─ TradingTabRow        │      │  ├─ stocks: List<Stock>     │  │
+│  │  │    MARKETS / WATCHLIST│      │  ├─ watchlist: Set<String>  │  │
+│  │  ├─ PriceList            │      │  ├─ alerts: List<Alert>     │  │
+│  │  ├─ StockChartPanel      │      │  ├─ isConnected: Boolean    │  │
+│  │  │    └─ PriceLineChart  │      │  ├─ isOffline: Boolean      │  │
+│  │  ├─ OrderBookPanel       │      │  └─ orderBook: OrderBook?   │  │
+│  │  └─ SetAlertDialog       │      └─────────────────────────────┘  │
+│  └──────────────────────────┘                                       │
+└──────────────────────────────────────────┬──────────────────────────┘
+                                           │ 13 use cases
+┌──────────────────────────────────────────▼──────────────────────────┐
+│                          DOMAIN LAYER                               │
+│                       (zero Android imports)                        │
+│                                                                     │
+│  Use Cases                            Entities                      │
+│  ├─ GetInitialStocksUseCase           ├─ Stock                      │
+│  ├─ GetCachedStocksUseCase            ├─ PriceAlert (ABOVE/BELOW)   │
+│  ├─ SubscribeToPriceUpdatesUseCase    ├─ OrderBook                  │
+│  ├─ WatchSymbolsUseCase               └─ OrderBookEntry             │
+│  ├─ ManageConnectionUseCase                                         │
+│  ├─ ObserveWatchlistUseCase           Repository interfaces         │
+│  ├─ AddToWatchlistUseCase             ├─ PriceRepository            │
+│  ├─ RemoveFromWatchlistUseCase        ├─ WatchlistRepository        │
+│  ├─ ObserveAlertsUseCase              ├─ AlertRepository            │
+│  ├─ AddAlertUseCase                   └─ ConnectionRepository       │
+│  ├─ RemoveAlertUseCase                                              │
+│  ├─ CheckAlertsUseCase                                              │
+│  └─ ObserveOrderBookUseCase                                         │
+└──────────────────────────────────────────┬──────────────────────────┘
+                                           │ concrete implementations
+┌──────────────────────────────────────────▼──────────────────────────┐
+│                           DATA LAYER                                │
+│                                                                     │
+│  ┌─────────────────────┐ ┌───────────────────┐ ┌─────────────────┐  │
+│  │ WebSocket           │ │ REST (Finnhub)     │ │ Local storage   │  │
+│  │                     │ │                   │ │                 │  │
+│  │ wss://ws.finnhub.io │ │ /api/v1/quote     │ │ DataStore       │  │
+│  │                     │ │ 25 symbols/launch │ │ watchlist +     │  │
+│  │ Exponential back-off│ │ OkHttp + Gson     │ │ alerts          │  │
+│  │ 1 s → 64 s + jitter │ │                   │ │                 │  │
+│  │ 30 s ping keepalive │ │                   │ │ SharedPrefs     │  │
+│  └─────────────────────┘ └───────────────────┘ │ price cache     │  │
+│                                                 └─────────────────┘  │
+└─────────────────────────────────────────────────────────────────────┘
+                      ▲ Hilt DI wires all dependencies
 ```
 
-### 3. **Real-time WebSocket Integration**
-- Connects to WebSocket for price updates
-- Handles connection state transitions
-- Graceful error handling with Result wrappers
+### Data flow — price update
 
-### 4. **Dark Theme Support**
-- Toggle between light and dark modes
-- Smooth transitions
-- Material You design on Android 12+
-
-### 5. **Comprehensive Error Handling**
-```kotlin
-Result<T> // Type-safe error handling throughout the app
+```
+Finnhub WebSocket
+    │  tick JSON
+    ▼
+WebSocketDataSource (SharedFlow, capacity 64)
+    │
+    ▼
+SubscribeToPriceUpdatesUseCase
+    │
+    ▼
+PriceTrackerViewModel
+    ├─ updates priceHistory (ArrayDeque, max 50 points)
+    ├─ computes flash colour (BullGreen / BearRed)
+    └─ emits new StateFlow snapshot
+         │
+         ▼
+    Compose recomposes affected rows only
 ```
 
-## 🏃 Getting Started
+---
+
+## Tech stack
+
+| Layer | Library / Tool | Version |
+|-------|---------------|---------|
+| Language | Kotlin | 2.3 |
+| UI | Jetpack Compose + Material 3 | BOM 2025 |
+| DI | Hilt | 2.59 |
+| Async | Coroutines · StateFlow · SharedFlow | 1.10 |
+| Network | OkHttp (WebSocket + REST) | 5.3 |
+| Serialisation | Gson | 2.13 |
+| Local storage | DataStore Preferences | 1.2 |
+| Background work | WorkManager | 2.10 |
+| Splash screen | AndroidX Core SplashScreen | 1.0 |
+| Build | Gradle KTS + Version Catalog | AGP 9.1 |
+
+---
+
+## Getting started
 
 ### Prerequisites
-- Android Studio Giraffe or later
-- Android SDK 24+
-- Kotlin 2.0+
 
-### Installation
+- Android Studio Meerkat 2024.3 or later
+- JDK 17
+- A free [Finnhub API key](https://finnhub.io/register) (no credit card required)
 
-1. Clone the repository:
+### 1. Clone
+
 ```bash
-git clone https://github.com/yourusername/Realtime-Price-Tracker.git
+git clone https://github.com/mohd-aquib/Realtime-Price-Tracker.git
 cd Realtime-Price-Tracker
 ```
 
-2. Open in Android Studio and let Gradle sync dependencies
+### 2. Add your API key
 
-3. Run on emulator or device:
+Edit `app/src/main/java/com/aquib/pricepulse/data/config/Constants.kt`:
+
+```kotlin
+const val API_KEY = "your_finnhub_api_key_here"
+```
+
+### 3. Run
+
 ```bash
 ./gradlew installDebug
 ```
 
-## 📚 Data Flow
+Or press **Run ▶** in Android Studio. The free Finnhub plan covers all 25 default symbols.
 
-### UI Update Flow
-1. User interacts with UI (e.g., clicks Start button)
-2. ViewModel receives action and calls use case
-3. Use case invokes repository method
-4. Repository calls data source
-5. Data source connects to WebSocket or retrieves data
-6. Result flows back up through Repository → Use Case → ViewModel
-7. ViewModel updates StateFlow
-8. Compose recomposes with new state
+---
 
-### Example: Starting Price Feed
+## Package structure
+
 ```
-User Tap "Start"
-    ↓
-ViewModel.toggleFeed()
-    ↓
-ManageConnectionUseCase.connect()
-    ↓
-ConnectionRepositoryImpl.connect()
-    ↓
-WebSocketDataSource.connect()
-    ↓
-OkHttpClient.newWebSocket()
-    ↓
-State updated: _uiState.update { it.copy(isRunning = true) }
-    ↓
-UI recomposes with new state
+com.aquib.pricepulse/
+│
+├── MainActivity.kt
+├── PricePulseApp.kt
+│
+├── di/
+│   └── DataModule.kt                 # Hilt @Provides and @Binds
+│
+├── domain/                           # No Android dependencies
+│   ├── config/Constants.kt           # 25 default stock symbols
+│   ├── entities/
+│   │   ├── Stock.kt
+│   │   ├── PriceAlert.kt             # AlertCondition: ABOVE | BELOW
+│   │   ├── OrderBook.kt
+│   │   └── OrderBookEntry.kt
+│   ├── repositories/                 # Interfaces only
+│   └── usecases/                     # 13 single-responsibility classes
+│
+├── data/
+│   ├── config/Constants.kt           # API_KEY, WS_URL, endpoints
+│   ├── datasource/
+│   │   ├── WebSocketDataSource.kt    # OkHttp WS + back-off + reconnect
+│   │   └── FinnhubRestDataSource.kt  # Quote endpoint, coroutine IO
+│   ├── local/
+│   │   ├── StockCacheDataSource.kt   # SharedPrefs snapshot + timestamp
+│   │   ├── WatchlistDataSource.kt    # DataStore persistence
+│   │   └── AlertDataSource.kt        # DataStore persistence
+│   ├── dto/
+│   │   ├── FinnhubDtos.kt
+│   │   └── PriceUpdateDto.kt
+│   ├── repositories/                 # 4 concrete implementations
+│   ├── worker/AlertCheckWorker.kt    # WorkManager 15-min alert poll
+│   └── notification/NotificationHelper.kt
+│
+└── presentation/
+    ├── state/PriceTrackerUiState.kt
+    ├── viewmodel/PriceTrackerViewModel.kt
+    └── ui/
+        ├── PriceTrackerScreen.kt     # Markets + Watchlist tabs
+        ├── PriceLineChart.kt         # Cubic Bézier + animated clip
+        ├── OrderBookPanel.kt         # Depth bars, spread display
+        ├── SetAlertDialog.kt
+        └── theme/
+            ├── Color.kt              # Binance-inspired dark palette
+            ├── Theme.kt
+            └── Type.kt
 ```
 
-## 🧪 Testing Strategy
+---
 
-The architecture supports comprehensive testing:
+## Tracked symbols
 
-- **Unit Tests**: Test use cases with mocked repositories
-- **Repository Tests**: Mock data sources to test business logic
-- **UI Tests**: Use Compose testing APIs with mocked ViewModel
-- **Integration Tests**: Full flow testing with real WebSocket
+25 NASDAQ tech stocks configured out of the box:
 
-Example:
+```
+AAPL  GOOG  TSLA  AMZN  MSFT  NVDA  META  NFLX  ADBE  CRM
+INTC  AMD   ORCL  CSCO  IBM   QCOM  AVGO  TXN   MU    AMAT
+LRCX  KLAC  NOW   SNPS  CDNS
+```
+
+To add or swap symbols, edit `domain/config/Constants.kt`:
+
 ```kotlin
-@Test
-fun testGetInitialStocks() = runTest {
-    val mockRepository = mockk<PriceRepository>()
-    coEvery { mockRepository.getStocks(any()) } returns Result.success(listOf(mockStock))
-    
-    val useCase = GetInitialStocksUseCase(mockRepository)
-    val result = useCase()
-    
-    assertTrue(result.isSuccess)
-}
+val STOCK_SYMBOLS = listOf("AAPL", "GOOG", /* your symbols */)
 ```
 
-## 🛣️ Roadmap
+---
 
-### Phase 1: Foundation ✅
-- [x] Clean architecture setup
-- [x] MVVM with StateFlow
-- [x] WebSocket integration
-- [x] Dark theme support
-- [x] Initial UI implementation
+## License
 
-### Phase 2: Enhancements (Next)
-- [ ] Add Hilt dependency injection
-- [ ] Implement comprehensive error messages
-- [ ] Add caching layer for offline support
-- [ ] Real stock price API integration
-- [ ] User preferences persistence
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for details.
 
-### Phase 3: Advanced Features
-- [ ] Portfolio management
-- [ ] Price alerts and notifications
-- [ ] Historical price charts
-- [ ] Multiple watchlists
-- [ ] Push notifications
+---
 
-### Phase 4: Optimization
-- [ ] Performance profiling
-- [ ] Memory optimization
-- [ ] Battery usage optimization
-- [ ] Instrumented tests expansion
-- [ ] Compose optimization
+## Contributing
 
-## 🤝 Best Practices Demonstrated
-
-1. **Single Responsibility Principle**: Each class has one reason to change
-2. **Dependency Inversion**: High-level modules don't depend on low-level modules
-3. **Immutability**: Data classes and StateFlow for predictable state
-4. **Type Safety**: Result wrappers instead of exceptions for flow control
-5. **Composability**: Combine use cases and repositories easily
-6. **Testability**: Interfaces enable mock implementations
-
-## 📄 Dependencies
-
-- **Jetpack Compose**: Modern UI framework
-- **AndroidX Lifecycle**: ViewModel and StateFlow
-- **Material3**: Material Design components
-- **OkHttp**: HTTP client for WebSocket
-- **Gson**: JSON serialization
-- **Kotlin Coroutines**: Async operations
-
-See `gradle/libs.versions.toml` for version details.
-
-## 🔧 Configuration
-
-### WebSocket URL
-Located in `data/config/Constants.kt`:
-```kotlin
-const val WS_URL = "wss://ws.postman-echo.com/raw"
-```
-
-### Stock Symbols
-Located in `domain/config/Constants.kt`:
-```kotlin
-val STOCK_SYMBOLS = listOf("AAPL", "GOOG", "TSLA", ...)
-```
-
-## 📝 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙋 Support
-
-For questions or issues, please:
-1. Check existing issues on GitHub
-2. Create a new issue with detailed description
-3. Follow the template for bug reports
-
-## 👨‍💻 Contributing
-
-Contributions are welcome! Please:
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
+2. Create a branch: `git checkout -b feature/my-feature`
+3. Commit: `git commit -m 'Add my feature'`
+4. Push: `git push origin feature/my-feature`
 5. Open a Pull Request
 
 ---
 
-**Built with ❤️ using Clean Architecture principles**
+<div align="center">
+
+Built by [Mohd Aquib](https://github.com/mohd-aquib) · Data by [Finnhub](https://finnhub.io/)
+
+</div>
