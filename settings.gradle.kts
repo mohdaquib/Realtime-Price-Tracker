@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Realtime Price Tracker"
+rootProject.name = "PricePulse"
 include(":app")

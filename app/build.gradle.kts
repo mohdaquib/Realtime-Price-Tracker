@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.realtimepricetracker"
+    namespace = "com.aquib.pricepulse"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.realtimepricetracker"
+        applicationId = "com.aquib.pricepulse"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
