@@ -1,4 +1,4 @@
-﻿package com.aquib.pricepulse.data.local
+package com.aquib.pricepulse.data.local
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -10,7 +10,6 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.aquib.pricepulse.domain.entities.PriceAlert
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 private val Context.alertDataStore: DataStore<Preferences> by preferencesDataStore(name = "alerts")
@@ -45,4 +44,3 @@ class AlertDataSource(private val context: Context, private val gson: Gson) {
         }
     }
 }
-

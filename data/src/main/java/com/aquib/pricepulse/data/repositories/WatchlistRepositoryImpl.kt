@@ -1,4 +1,4 @@
-﻿package com.aquib.pricepulse.data.repositories
+package com.aquib.pricepulse.data.repositories
 
 import com.aquib.pricepulse.data.local.WatchlistDataSource
 import com.aquib.pricepulse.domain.repositories.WatchlistRepository
@@ -14,4 +14,3 @@ class WatchlistRepositoryImpl @Inject constructor(
     override suspend fun add(symbol: String) = dataSource.add(symbol)
     override suspend fun remove(symbol: String) = dataSource.remove(symbol)
 }
-

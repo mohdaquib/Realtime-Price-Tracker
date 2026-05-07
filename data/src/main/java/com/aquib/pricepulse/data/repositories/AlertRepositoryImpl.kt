@@ -1,4 +1,4 @@
-﻿package com.aquib.pricepulse.data.repositories
+package com.aquib.pricepulse.data.repositories
 
 import com.aquib.pricepulse.data.local.AlertDataSource
 import com.aquib.pricepulse.domain.entities.PriceAlert
@@ -15,4 +15,3 @@ class AlertRepositoryImpl @Inject constructor(
     override suspend fun add(alert: PriceAlert) = dataSource.add(alert)
     override suspend fun remove(id: String) = dataSource.remove(id)
 }
-

@@ -1,4 +1,4 @@
-﻿package com.aquib.pricepulse.data.local
+package com.aquib.pricepulse.data.local
 
 import android.content.Context
 import androidx.datastore.core.DataStore
@@ -29,4 +29,3 @@ class WatchlistDataSource(private val context: Context) {
         }
     }
 }
-

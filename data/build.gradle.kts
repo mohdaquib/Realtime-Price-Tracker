@@ -34,4 +34,10 @@ dependencies {
 
     implementation(libs.work.runtime.ktx)
     implementation(libs.datastore.preferences)
+    implementation(libs.gson)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.mockk)
+    testImplementation(libs.core.testing)
 }

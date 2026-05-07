@@ -42,8 +42,6 @@ class PriceRepositoryImplTest {
         repo = PriceRepositoryImpl(webSocketDataSource, restDataSource, gson, stockCacheDataSource)
     }
 
-    // ── getStocks ────────────────────────────────────────────────────────────
-
     @Test
     fun `getStocks success maps DTOs to Stock list and saves to cache`() = runTest {
         val dto = FinnhubQuoteResponseDto(
@@ -74,8 +72,6 @@ class PriceRepositoryImplTest {
         assertTrue(result.isFailure)
     }
 
-    // ── subscribeToPriceUpdates ──────────────────────────────────────────────
-
     @Test
     fun `subscribeToPriceUpdates emits correct Stock for valid trade message`() = runTest {
         val json = """{"type":"trade","data":[{"p":155.5,"s":"AAPL","t":1234567890,"v":100.0}]}"""
@@ -95,7 +91,6 @@ class PriceRepositoryImplTest {
 
     @Test
     fun `subscribeToPriceUpdates calculates change relative to previous price from cache`() = runTest {
-        // Prime the internal price cache via getStocks
         val dto = FinnhubQuoteResponseDto(
             currentPrice = 150.0, change = 0.0, percentChange = 0.0,
             highPrice = 150.0, lowPrice = 150.0, openPrice = 150.0,
@@ -112,19 +107,16 @@ class PriceRepositoryImplTest {
         runCurrent()
 
         assertTrue("Results should not be empty", results.isNotEmpty())
-        val stock = results[0].getOrThrow()
-        assertEquals(5.0, stock.change, 0.001) // 155 - 150
+        assertEquals(5.0, results[0].getOrThrow().change, 0.001)
         job.cancel()
     }
 
     @Test
     fun `subscribeToPriceUpdates filters out non-trade type messages`() = runTest {
-        val json = """{"type":"ping","data":[]}"""
         val results = mutableListOf<Result<Stock>>()
-
         val job = launch { repo.subscribeToPriceUpdates().collect { results.add(it) } }
         runCurrent()
-        messagesFlow.emit(json)
+        messagesFlow.emit("""{"type":"ping","data":[]}""")
         runCurrent()
 
         assertTrue(results.isEmpty())
@@ -134,21 +126,18 @@ class PriceRepositoryImplTest {
     @Test
     fun `subscribeToPriceUpdates emits failure for malformed JSON`() = runTest {
         val results = mutableListOf<Result<Stock>>()
-
         val job = launch { repo.subscribeToPriceUpdates().collect { results.add(it) } }
         runCurrent()
         messagesFlow.emit("not-valid-json")
         runCurrent()
 
-        assertTrue("Results should not be empty", results.isNotEmpty())
+        assertTrue(results.isNotEmpty())
         assertTrue(results[0].isFailure)
         job.cancel()
     }
 
-    // ── getCachedStocks ──────────────────────────────────────────────────────
-
     @Test
-    fun `getCachedStocks delegates to stockCacheDataSource and returns its result`() = runTest {
+    fun `getCachedStocks delegates to stockCacheDataSource`() = runTest {
         val cachedStocks = listOf(Stock("TSLA", 800.0, 10.0, 1.25))
         coEvery { stockCacheDataSource.load() } returns Pair(cachedStocks, 1_700_000_000L)
 
@@ -158,20 +147,15 @@ class PriceRepositoryImplTest {
         assertEquals(1_700_000_000L, timestamp)
     }
 
-    // ── subscribeToSymbols / unsubscribeFromSymbols ──────────────────────────
-
     @Test
     fun `subscribeToSymbols calls subscribeMultiple on WebSocket`() = runTest {
         repo.subscribeToSymbols(listOf("AAPL", "GOOG"))
-
         verify { webSocketDataSource.subscribeMultiple(listOf("AAPL", "GOOG")) }
     }
 
     @Test
     fun `unsubscribeFromSymbols calls unsubscribeMultiple on WebSocket`() = runTest {
         repo.unsubscribeFromSymbols(listOf("AAPL"))
-
         verify { webSocketDataSource.unsubscribeMultiple(listOf("AAPL")) }
     }
 }
-

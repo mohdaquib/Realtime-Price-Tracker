@@ -59,4 +59,3 @@ class NotificationHelper(private val context: Context) {
         NotificationManagerCompat.from(context).notify(alert.id.hashCode(), notification)
     }
 }
-

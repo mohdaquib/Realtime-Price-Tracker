@@ -1,4 +1,4 @@
-﻿package com.aquib.pricepulse.data.worker
+package com.aquib.pricepulse.data.worker
 
 import android.content.Context
 import androidx.hilt.work.HiltWorker
@@ -46,4 +46,3 @@ class AlertCheckWorker @AssistedInject constructor(
         return Result.success()
     }
 }
-

@@ -1,4 +1,4 @@
-package com.aquib.pricepulse.di
+package com.aquib.pricepulse.data.di
 
 import android.content.Context
 import com.google.gson.Gson

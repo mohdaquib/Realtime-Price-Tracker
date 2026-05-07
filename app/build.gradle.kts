@@ -44,7 +44,7 @@ android {
 
 dependencies {
     implementation(project(":domain"))
-    implementation(project(":core:network"))
+    implementation(project(":data"))
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.core.splashscreen)
@@ -57,8 +57,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.compose.material.icons.extended)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.gson)
-    implementation(libs.datastore.preferences)
+
     implementation(libs.work.runtime.ktx)
 
     // Hilt
