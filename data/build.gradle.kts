@@ -36,8 +36,5 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.gson)
 
-    testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.mockk)
-    testImplementation(libs.core.testing)
+    testImplementation(libs.bundles.testing.unit)
 }
