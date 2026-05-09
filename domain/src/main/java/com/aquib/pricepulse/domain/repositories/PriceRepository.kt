@@ -8,6 +8,5 @@ interface PriceRepository {
     fun subscribeToPriceUpdates(): Flow<Result<Stock>>
     suspend fun subscribeToSymbols(symbols: List<String>): Result<Unit>
     suspend fun unsubscribeFromSymbols(symbols: List<String>): Result<Unit>
-    suspend fun sendPriceUpdate(stock: Stock): Result<Unit>
     suspend fun getCachedStocks(): Pair<List<Stock>, Long?>
 }

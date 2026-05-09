@@ -4,6 +4,7 @@ import com.aquib.pricepulse.core.network.datasource.FinnhubRestDataSource
 import com.aquib.pricepulse.core.network.datasource.WebSocketDataSource
 import com.aquib.pricepulse.core.network.dto.FinnhubTradeDto
 import com.aquib.pricepulse.data.local.StockCacheDataSource
+import com.aquib.pricepulse.data.mapper.toDomain
 import com.aquib.pricepulse.domain.entities.Stock
 import com.aquib.pricepulse.domain.repositories.PriceRepository
 import com.google.gson.Gson
@@ -28,14 +29,12 @@ class PriceRepositoryImpl @Inject constructor(
             restDataSource.getQuotes(symbols).fold(
                 onSuccess = { quotes ->
                     val stocks = quotes.map { (symbol, quoteDto) ->
-                        val stock = Stock(
+                        Stock(
                             symbol = symbol,
                             price = quoteDto.currentPrice,
                             change = quoteDto.change,
-                            changePercentage = quoteDto.percentChange
-                        )
-                        priceCache[symbol] = quoteDto.currentPrice
-                        stock
+                            changePercentage = quoteDto.percentChange,
+                        ).also { priceCache[symbol] = quoteDto.currentPrice }
                     }.sortedByDescending { it.price }
 
                     if (stocks.isNotEmpty()) stockCacheDataSource.save(stocks)
@@ -55,22 +54,13 @@ class PriceRepositoryImpl @Inject constructor(
                 if (tradeDto.type == "trade" && tradeDto.data.isNotEmpty()) {
                     val trade = tradeDto.data.first()
                     val previousPrice = priceCache[trade.symbol] ?: trade.price
-                    val change = trade.price - previousPrice
                     priceCache[trade.symbol] = trade.price
-
-                    Result.success(
-                        Stock(
-                            symbol = trade.symbol,
-                            price = trade.price,
-                            change = change,
-                            changePercentage = if (previousPrice != 0.0) (change / previousPrice) * 100 else 0.0
-                        )
-                    )
+                    Result.success(trade.toDomain(previousPrice))
                 } else {
                     null
                 }
             } catch (e: Exception) {
-                Result.failure<Stock>(Exception("Failed to parse WebSocket message: ${e.message}"))
+                Result.failure<Stock>(e)
             }
         }.filterNotNull()
 
@@ -87,8 +77,6 @@ class PriceRepositoryImpl @Inject constructor(
     } catch (e: Exception) {
         Result.failure(e)
     }
-
-    override suspend fun sendPriceUpdate(stock: Stock): Result<Unit> = Result.success(Unit)
 
     override suspend fun getCachedStocks(): Pair<List<Stock>, Long?> = stockCacheDataSource.load()
 }

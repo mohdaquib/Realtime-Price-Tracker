@@ -1,10 +1,9 @@
 package com.aquib.pricepulse.domain.repositories
 
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 interface ConnectionRepository {
-    fun observeConnectionState(): Flow<Boolean>
+    val connectionState: StateFlow<Boolean>
     suspend fun connect(): Result<Unit>
     suspend fun disconnect(): Result<Unit>
-    fun isConnected(): Boolean
 }

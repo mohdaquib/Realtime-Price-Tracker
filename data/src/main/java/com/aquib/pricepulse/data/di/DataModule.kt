@@ -8,10 +8,13 @@ import com.aquib.pricepulse.data.local.WatchlistDataSource
 import com.aquib.pricepulse.data.notification.NotificationHelper
 import com.aquib.pricepulse.data.repositories.AlertRepositoryImpl
 import com.aquib.pricepulse.data.repositories.ConnectionRepositoryImpl
+import com.aquib.pricepulse.data.repositories.OrderBookRepositoryImpl
 import com.aquib.pricepulse.data.repositories.PriceRepositoryImpl
 import com.aquib.pricepulse.data.repositories.WatchlistRepositoryImpl
 import com.aquib.pricepulse.domain.repositories.AlertRepository
 import com.aquib.pricepulse.domain.repositories.ConnectionRepository
+import com.aquib.pricepulse.domain.repositories.Notifier
+import com.aquib.pricepulse.domain.repositories.OrderBookRepository
 import com.aquib.pricepulse.domain.repositories.PriceRepository
 import com.aquib.pricepulse.domain.repositories.WatchlistRepository
 import dagger.Binds
@@ -30,26 +33,26 @@ object DataModule {
     @Singleton
     fun provideStockCacheDataSource(
         @ApplicationContext context: Context,
-        gson: Gson
+        gson: Gson,
     ): StockCacheDataSource = StockCacheDataSource(context, gson)
 
     @Provides
     @Singleton
     fun provideWatchlistDataSource(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): WatchlistDataSource = WatchlistDataSource(context)
 
     @Provides
     @Singleton
     fun provideAlertDataSource(
         @ApplicationContext context: Context,
-        gson: Gson
+        gson: Gson,
     ): AlertDataSource = AlertDataSource(context, gson)
 
     @Provides
     @Singleton
     fun provideNotificationHelper(
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
     ): NotificationHelper = NotificationHelper(context)
 }
 
@@ -72,4 +75,12 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAlertRepository(impl: AlertRepositoryImpl): AlertRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindOrderBookRepository(impl: OrderBookRepositoryImpl): OrderBookRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNotifier(impl: NotificationHelper): Notifier
 }

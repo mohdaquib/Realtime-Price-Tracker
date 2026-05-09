@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.aquib.pricepulse.core.common.config.AppConstants
-import com.aquib.pricepulse.data.notification.NotificationHelper
+import com.aquib.pricepulse.domain.repositories.Notifier
 import com.aquib.pricepulse.domain.entities.AlertCondition
 import com.aquib.pricepulse.domain.entities.PriceAlert
 import com.aquib.pricepulse.domain.entities.Stock
@@ -51,7 +51,7 @@ class PriceTrackerViewModel @Inject constructor(
     private val addAlertUseCase: AddAlertUseCase,
     private val removeAlertUseCase: RemoveAlertUseCase,
     private val checkAlertsUseCase: CheckAlertsUseCase,
-    private val notificationHelper: NotificationHelper,
+    private val notifier: Notifier,
     private val observeOrderBookUseCase: ObserveOrderBookUseCase,
 ) : ViewModel() {
 
@@ -77,7 +77,7 @@ class PriceTrackerViewModel @Inject constructor(
             }
             .launchIn(viewModelScope)
 
-        manageConnectionUseCase.observeConnectionState()
+        manageConnectionUseCase.connectionState
             .onEach { connected ->
                 _uiState.update { it.copy(isConnected = connected) }
                 if (connected && _uiState.value.isRunning) {
@@ -197,7 +197,7 @@ class PriceTrackerViewModel @Inject constructor(
         if (triggered.isNotEmpty()) {
             viewModelScope.launch {
                 triggered.forEach { alert ->
-                    notificationHelper.notify(alert, stock.price)
+                    notifier.notify(alert, stock.price)
                     removeAlertUseCase(alert.id)
                 }
             }

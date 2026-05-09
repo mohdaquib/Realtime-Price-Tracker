@@ -24,7 +24,7 @@ android {
 }
 
 dependencies {
-    implementation(project(":domain"))
+    api(project(":domain"))
     implementation(project(":core:network"))
 
     implementation(libs.hilt.android)

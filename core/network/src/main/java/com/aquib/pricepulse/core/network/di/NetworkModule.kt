@@ -19,7 +19,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-
     @Provides
     @Singleton
     fun provideDispatcherProvider(): DispatcherProvider = DefaultDispatcherProvider()
@@ -46,5 +45,4 @@ object NetworkModule {
         @ApplicationContext context: Context,
         scope: CoroutineScope
     ): WebSocketDataSource = WebSocketDataSource(scope, context)
-
 }
